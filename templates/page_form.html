@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mb-4 flex space-x-4">
+    <a href="{{ url_for('admin') }}" class="btn">Dashboard</a>
+</div>
+<h2 class="text-2xl font-bold mb-4">
+    {% if page %} Edit Page {% else %} Add New Page {% endif %}
+</h2>
+
+<form method="POST" class="space-y-4 max-w-xl">
+    <div>
+        <label class="block mb-1">Title</label>
+        <input type="text" name="title" value="{{ page.title if page else '' }}" required
+            class="w-full p-2 rounded bg-gray-900 text-yellow-300 border border-yellow-600">
+    </div>
+
+    <!-- <div>
+        <label class="block mb-1">Content / Riddle</label>
+        <textarea name="content" required
+            class="w-full p-2 rounded bg-gray-900 text-yellow-300 border border-yellow-600">{{ page.content if page else '' }}</textarea>
+    </div> -->
+
+    <div>
+        <label class="block mb-1">Question</label>
+        <input type="text" name="question" value="{{ page.question if page else '' }}" required
+            class="w-full p-2 rounded bg-gray-900 text-yellow-300 border border-yellow-600">
+    </div>
+
+    <div>
+        <label class="block mb-1">Answer</label>
+        <input type="text" name="answer" value="{{ page.answer if page else '' }}" required
+            class="w-full p-2 rounded bg-gray-900 text-yellow-300 border border-yellow-600">
+    </div>
+
+    <div>
+        <label class="block mb-1">Unlock Code</label>
+        <input type="text" name="unlock_code" value="{{ page.unlock_code if page else '' }}" required
+            class="w-full p-2 rounded bg-gray-900 text-yellow-300 border border-yellow-600">
+    </div>
+
+    <button type="submit" class="btn">{% if page %} Update Page {% else %} Add Page {% endif %}</button>
+</form>
+{% endblock %}

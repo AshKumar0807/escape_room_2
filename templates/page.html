@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto mt-10 bg-gray-900 p-6 rounded shadow">
+
+    <h2 class="text-2xl font-bold mb-4 text-center">{{ page.title }}</h2>
+
+    {# Show riddle or story content #}
+    {% if page.content %}
+    <p class="mb-4 text-center">{{ page.content }}</p>
+    {% endif %}
+
+    {# Escape question form #}
+    <form method="POST" class="flex flex-col items-center">
+        {% if page.question %}
+        <label class="block mb-2 text-center">{{ page.question }}</label>
+        <input type="text" name="answer" required class="mb-4 w-full max-w-md text-center">
+        {% endif %}
+        <button type="submit" class="btn">Submit Answer</button>
+    </form>
+
+    {# Unlock code display if solved #}
+    {% if code_unlocked %}
+    <div class="mt-4 p-3 bg-yellow-600 text-black rounded">
+        ✅ Correct!
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="max-w-2xl mx-auto mt-6 bg-gray-900 p-6 rounded shadow">
+    <h2 class="text-2xl font-bold mb-4">Add New Page</h2>
+    <form method="POST">
+        <label class="block mb-2">Title:</label>
+        <input type="text" name="title" required class="mb-4">
+
+        <label class="block mb-2">Content:</label>
+        <textarea name="content" rows="4" required class="mb-4"></textarea>
+
+        <label class="block mb-2">Unlock Code:</label>
+        <input type="text" name="unlock_code" required class="mb-4">
+
+        <label class="block mb-2">Type:</label>
+        <select name="unlock_type" class="mb-4">
+            <option value="code">Code</option>
+            <option value="quiz">Quiz</option>
+        </select>
+
+        <label class="block mb-2">Question (for quiz):</label>
+        <textarea name="question" rows="2" class="mb-4"></textarea>
+
+        <label class="block mb-2">Answer (for quiz):</label>
+        <input type="text" name="answer" class="mb-4">
+
+        <button type="submit" class="btn w-full">Add Page</button>
+    </form>
+</div>
+{% endblock %}

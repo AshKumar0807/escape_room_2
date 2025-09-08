@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center mt-10">
+    <h2 class="text-3xl font-bold mb-4">Welcome to the Escape Room CTF!</h2>
+    {% if not session.get('team_name') %}
+    <a href="{{ url_for('signup') }}" class="btn">Sign Up Your Team</a>
+    {% else %}
+    <a href="{{ url_for('page') }}" class="btn">Continue Challenge</a>
+    {% endif %}
+</div>
+{% endblock %}
