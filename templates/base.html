@@ -32,17 +32,17 @@
     <header class="p-4 flex justify-between items-center border-b border-yellow-600">
         <h1 class="text-2xl font-bold">ISTE | Escape Room</h1>
         <nav>
-            <a href="{{ url_for('index') }}" class="mr-4">Home</a>
+            <a href="{{ url_for('index') }}" class="mr-6">Home</a>
 
             {% if session.get('team_name') %}
             <a href="{{ url_for('leaderboard') }}" class="mr-4">Leaderboard</a>
-            <a href="{{ url_for('logout') }}" class="mr-4">Logout</a>
+            <a href="{{ url_for('logout') }}" class="mr-6">Logout</a>
             {% endif %}
             {% if session.get('is_admin') %}
-            <a href="{{ url_for('admin_logout') }}" class="mr-4">Admin Logout</a>
+            <a href="{{ url_for('admin_logout') }}" class="mr-6">Admin Logout</a>
             {% endif %}
             {% if not session.get('team_name') and not session.get('is_admin') %}
-            <a href="{{ url_for('signup') }}" class="mr-4">Signup</a>
+            <a href="{{ url_for('signup') }}" class="mr-6">Signup</a>
             <a href="{{ url_for('login') }}">Login</a>
             {% endif %}
         </nav>
@@ -62,7 +62,7 @@
     </main>
 
     <footer class="p-4 text-center border-t border-yellow-600">
-        &copy; 2025 ISTE | Escape Room
+        ISTE | Escape Room
     </footer>
 
 </body>

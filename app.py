@@ -115,6 +115,60 @@ def login():
 
     return render_template("login.html")
 
+# @app.route("/page", methods=["GET", "POST"])
+# def page():
+#     team_name = session.get("team_name")
+#     if not team_name:
+#         flash("Please signup or login first!")
+#         return redirect(url_for("signup"))
+
+#     team = Team.query.filter_by(name=team_name).first()
+#     if not team:
+#         flash("Team not found!")
+#         return redirect(url_for("signup"))
+
+#     # Get current page
+#     page = None
+#     if team.current_page_id:
+#         page = Page.query.get(team.current_page_id)
+
+#     if not page:
+#         # New team: assign first page
+#         first_page = Page.query.order_by(Page.id).first()
+#         if first_page:
+#             team.current_page_id = first_page.id
+#             db.session.commit()
+#             page = first_page
+#         else:
+#             return "All pages completed! 🎉"
+
+#     code_unlocked = False
+#     unlock_code = None
+
+#     if request.method == "POST":
+#         answer = request.form.get("answer", "").strip().lower()
+
+#         if answer == page.answer.lower():
+#             code_unlocked = True
+#             unlock_code = page.unlock_code
+
+#             if not TeamProgress.query.filter_by(team_id=team.id, page_id=page.id).first():
+#                 db.session.add(TeamProgress(team_id=team.id, page_id=page.id))
+#                 db.session.commit()
+
+#             #next page
+#             team.last_key = unlock_code
+#             next_page = Page.query.filter(Page.id > page.id).order_by(Page.id).first()
+#             team.current_page_id = next_page.id if next_page else None
+#             db.session.commit()
+
+#             flash(f"✅ Correct!")
+#             return redirect(url_for("page"))
+#         else:
+#             flash("❌ Incorrect! Try again.")
+
+#     return render_template("page.html", page=page, code_unlocked=code_unlocked, unlock_code=unlock_code)
+
 @app.route("/page", methods=["GET", "POST"])
 def page():
     team_name = session.get("team_name")
@@ -127,10 +181,12 @@ def page():
         flash("Team not found!")
         return redirect(url_for("signup"))
 
+    # Check if the team has already completed all pages
+    if team.current_page_id is None:
+        return render_template("completion.html", team_name=team_name)
+
     # Get current page
-    page = None
-    if team.current_page_id:
-        page = Page.query.get(team.current_page_id)
+    page = Page.query.get(team.current_page_id)
 
     if not page:
         # New team: assign first page
@@ -140,7 +196,7 @@ def page():
             db.session.commit()
             page = first_page
         else:
-            return "All pages completed! 🎉"
+            return render_template("completion.html", team_name=team_name)
 
     code_unlocked = False
     unlock_code = None
@@ -156,20 +212,30 @@ def page():
                 db.session.add(TeamProgress(team_id=team.id, page_id=page.id))
                 db.session.commit()
 
-            #next page
+            # Record the last key
             team.last_key = unlock_code
+            
+            # Find next page
             next_page = Page.query.filter(Page.id > page.id).order_by(Page.id).first()
-            team.current_page_id = next_page.id if next_page else None
+            
+            if next_page:
+                team.current_page_id = next_page.id
+            else:
+                # No more pages - mark as completed
+                team.current_page_id = None
+            
             db.session.commit()
 
-            flash(f"✅ Correct!")
-            return redirect(url_for("page"))
+            if next_page:
+                flash("✅ Correct!")
+                return redirect(url_for("page"))
+            else:
+                # All challenges completed!
+                return render_template("completion.html", team_name=team_name)
         else:
             flash("❌ Incorrect! Try again.")
 
     return render_template("page.html", page=page, code_unlocked=code_unlocked, unlock_code=unlock_code)
-
-
 
 @app.route("/leaderboard")
 def leaderboard():

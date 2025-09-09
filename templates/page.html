@@ -10,10 +10,21 @@
     {% endif %}
 
     {# Escape question form #}
-    <form method="POST" class="flex flex-col items-center">
+    <!-- class="flex flex-col items-center" -->
+    <!-- <form method="POST">
         {% if page.question %}
         <label class="block mb-2 text-center">{{ page.question }}</label>
         <input type="text" name="answer" required class="mb-4 w-full max-w-md text-center">
+        {% endif %}
+        <button type="submit" class="btn">Submit Answer</button>
+    </form> -->
+    <form method="POST" class="flex flex-col items-center">
+        {% if page.question %}
+        <label class="block mb-4 whitespace-pre-line text-center text-lg font-medium">
+            {{ page.question }}
+        </label>
+        <input type="text" name="answer" required
+            class="mb-4 w-full max-w-md text-center border border-yellow-600 rounded p-2">
         {% endif %}
         <button type="submit" class="btn">Submit Answer</button>
     </form>
