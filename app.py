@@ -4,16 +4,35 @@ from flask_sqlalchemy import SQLAlchemy
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
+from sqlalchemy import create_engine
 
 
 app = Flask(__name__)
-app.secret_key = os.getenv("secret_key")
-
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///ctf.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-db = SQLAlchemy(app)
 
 load_dotenv()
+app.secret_key = os.getenv("secret_key")
+
+TURSO_DB_URL = os.getenv("TURSO_DATABASE_URL")  # host like “my-flask-db-xxx.turso.io”, should not include libsql://
+TURSO_AUTH_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
+
+# Build the URL using "sqlite+libsql://"
+db_url = f"sqlite+libsql://{TURSO_DB_URL}?secure=true"
+
+# Provide token via connect_args
+engine = create_engine(
+    db_url,
+    connect_args={
+        "auth_token": TURSO_AUTH_TOKEN
+    }
+)
+
+# Then with Flask-SQLAlchemy,bind the above engine
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "connect_args": {"auth_token": TURSO_AUTH_TOKEN}
+}
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+db = SQLAlchemy(app)
 
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME")
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
@@ -56,6 +75,13 @@ with app.app_context():
 def index():
     return render_template("index.html", team=session.get("team_name"))
 
+@app.route("/ping")
+def ping():
+    try:
+        db.session.execute("SELECT 1")
+        return "✅ Connected to Turso!"
+    except Exception as e:
+        return f"❌ DB Error: {e}"
 
 @app.route("/signup", methods=["GET", "POST"])
 def signup():
