@@ -1,39 +1,63 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="max-w-2xl mx-auto mt-10 bg-gray-900 p-6 rounded shadow">
+<div class="w-full max-w-4xl min-h-screen mx-auto bg-gray-900 p-10 rounded shadow flex flex-col justify-start">
 
-    <h2 class="text-2xl font-bold mb-4 text-center">{{ page.title }}</h2>
+    <h2 class="text-4xl font-bold mb-6 text-center">{{ page.title }}</h2>
 
-    {# Show riddle or story content #}
+    {# Story / riddle content with typing effect #}
     {% if page.content %}
-    <p class="mb-4 text-center">{{ page.content }}</p>
+    <p id="story-text" data-text="{{ page.content }}" class="mb-6 text-center text-xl">
+    </p>
     {% endif %}
 
-    {# Escape question form #}
-    <!-- class="flex flex-col items-center" -->
-    <!-- <form method="POST">
-        {% if page.question %}
-        <label class="block mb-2 text-center">{{ page.question }}</label>
-        <input type="text" name="answer" required class="mb-4 w-full max-w-md text-center">
-        {% endif %}
-        <button type="submit" class="btn">Submit Answer</button>
-    </form> -->
-    <form method="POST" class="flex flex-col items-center">
-        {% if page.question %}
-        <label class="block mb-4 whitespace-pre-line text-center text-lg font-medium">
-            {{ page.question }}
+    {# Escape question form with animated question text #}
+    {% if page.question %}
+    <form method="POST" class="w-full flex flex-col items-center">
+        <!-- Question will animate in -->
+        <label id="question-text" data-text="{{ page.question }}"
+            class="block mb-4 whitespace-pre-line text-center text-2xl font-medium">
         </label>
+
+        <!-- Input box -->
         <input type="text" name="answer" required
-            class="mb-4 w-full max-w-md text-center border border-yellow-600 rounded p-2">
-        {% endif %}
-        <button type="submit" class="btn">Submit Answer</button>
+            class="mb-4 w-full max-w-md text-center border border-yellow-600 text-black rounded p-3 text-xl">
+
+        <!-- Submit Button -->
+        <button type="submit" class="btn px-6 py-3 text-lg">Submit Answer</button>
     </form>
+    {% endif %}
 
     {# Unlock code display if solved #}
     {% if code_unlocked %}
-    <div class="mt-4 p-3 bg-yellow-600 text-black rounded">
+    <div class="mt-6 p-4 bg-yellow-600 text-black rounded text-xl text-center">
         ✅ Correct!
     </div>
     {% endif %}
 </div>
+
+{# Typing animation script #}
+<script>
+    function typeEffect(elementId, speed = 29) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+
+        const text = el.getAttribute("data-text") || "";
+        el.textContent = "";
+
+        let i = 0;
+        function typing() {
+            if (i < text.length) {
+                el.textContent += text.charAt(i);
+                i++;
+                setTimeout(typing, speed);
+            }
+        }
+        typing();
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+        typeEffect("story-text", 30);     // animate riddle/story
+        typeEffect("question-text", 40);  // animate question
+    });
+</script>
 {% endblock %}

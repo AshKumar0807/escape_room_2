@@ -68,8 +68,8 @@ class TeamProgress(db.Model):
     page_id = db.Column(db.Integer, db.ForeignKey("page.id", ondelete="CASCADE"), nullable=False)
     page = db.relationship("Page")
 
-with app.app_context():
-    db.create_all()
+# with app.app_context():
+#     db.create_all()
 
 @app.route("/")
 def index():
@@ -313,6 +313,10 @@ def admin_logout():
 
 @app.route("/admin")
 def admin():
+    if not session.get("is_admin"):
+        flash("Admin access required.")
+        return redirect(url_for("admin_login"))
+    
     teams = Team.query.all()
     progress_data = []
     for team in teams:
