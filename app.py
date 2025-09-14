@@ -62,8 +62,8 @@ class TeamProgress(db.Model):
     page_id = db.Column(db.Integer, db.ForeignKey("page.id", ondelete="CASCADE"), nullable=False)
     page = db.relationship("Page")
 
-with app.app_context():
-    db.create_all()
+# with app.app_context():
+#     db.create_all()
 
 @app.route("/")
 def index():
