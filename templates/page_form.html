@@ -25,6 +25,11 @@
         <input type="text" name="question" value="{{ page.question if page else '' }}" required
             class="w-full p-2 rounded bg-gray-900 text-yellow-300 border border-yellow-600">
     </div>
+    <div>
+        <label class="block mb-1">Link</label>
+        <input type="text" name="link" value="{{ page.link if page else '' }}"
+            class="w-full p-2 rounded bg-gray-900 text-yellow-300 border border-yellow-600">
+    </div>
 
     <div>
         <label class="block mb-1">Answer</label>

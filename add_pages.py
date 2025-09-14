@@ -1,8 +1,6 @@
 from app import db, Page, app
 
-# Wrap in app context
 with app.app_context():
-    # Check if pages already exist to avoid duplicates
     existing_titles = [p.title for p in Page.query.all()]
 
     pages_to_add = [

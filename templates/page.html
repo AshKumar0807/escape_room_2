@@ -6,38 +6,46 @@
 
     {# Story / riddle content with typing effect #}
     {% if page.content %}
-    <p id="story-text" data-text="{{ page.content }}" class="mb-6 text-center text-xl">
-    </p>
+    <p id="story-text" data-text="{{ page.content }}" class="mb-6 text-center text-xl"></p>
     {% endif %}
 
     {# Escape question form with animated question text #}
     {% if page.question %}
-    <form method="POST" class="w-full flex flex-col items-center">
-        <!-- Question will animate in -->
+    <form id="answerForm" class="w-full flex flex-col items-center">
         <label id="question-text" data-text="{{ page.question }}"
             class="block mb-4 whitespace-pre-line text-center text-2xl font-medium">
         </label>
+        {% if page.link %}
+        <p class="mb-4 text-center text-blue-400 underline">
+            <a href="{{ page.link }}" target="_blank" rel="noopener noreferrer">
+                {{ page.link }}
+            </a>
+        </p>
+        {% endif %}
 
-        <!-- Input box -->
-        <input type="text" name="answer" required
+        <input type="text" name="answer" id="answerInput" required
             class="mb-4 w-full max-w-md text-center border border-yellow-600 text-black rounded p-3 text-xl">
 
-        <!-- Submit Button -->
         <button type="submit" class="btn px-6 py-3 text-lg">Submit Answer</button>
     </form>
-    {% endif %}
 
-    {# Unlock code display if solved #}
-    {% if code_unlocked %}
-    <div class="mt-6 p-4 bg-yellow-600 text-black rounded text-xl text-center">
-        ✅ Correct!
+    <div id="feedback" class="mt-4 text-xl text-center"></div>
+
+    {# Loading spinner #}
+    <div id="loading" class="mt-4 text-center hidden">
+        <svg class="animate-spin h-8 w-8 text-yellow-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none"
+            viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+        </svg>
+        <p class="text-yellow-500">Validating...</p>
     </div>
     {% endif %}
+
 </div>
 
-{# Typing animation script #}
 <script>
-    function typeEffect(elementId, speed = 29) {
+    function typeEffect(elementId, speed = 20) { // faster typing
         const el = document.getElementById(elementId);
         if (!el) return;
 
@@ -56,8 +64,46 @@
     }
 
     window.addEventListener("DOMContentLoaded", () => {
-        typeEffect("story-text", 30);     // animate riddle/story
-        typeEffect("question-text", 40);  // animate question
+        typeEffect("story-text", 20);  // faster
+        typeEffect("question-text", 25);
+    });
+
+    document.getElementById("answerForm").addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const feedback = document.getElementById("feedback");
+        const loading = document.getElementById("loading");
+        const input = document.getElementById("answerInput");
+
+        feedback.innerHTML = "";
+        loading.classList.remove("hidden");
+
+        const formData = new FormData(this);
+        const response = await fetch("{{ url_for('check_answer', page_id=page.id) }}", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+        loading.classList.add("hidden");
+
+        if (data.correct) {
+            feedback.innerHTML = "✅ Correct!";
+            input.classList.remove("border-yellow-600", "border-red-600");
+            input.classList.add("border-green-600");
+
+            setTimeout(() => {
+                if (data.completed) {
+                    window.location.href = "{{ url_for('completion') }}";
+                } else {
+                    window.location.reload();
+                }
+            }, 1000);
+        } else {
+            feedback.innerHTML = "❌ Incorrect! Try again.";
+            input.classList.remove("border-yellow-600", "border-green-600");
+            input.classList.add("border-red-600");
+        }
     });
 </script>
 {% endblock %}

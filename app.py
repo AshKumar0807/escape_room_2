@@ -1,10 +1,10 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import os
 from flask_sqlalchemy import SQLAlchemy
 from functools import wraps
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, func, desc
 
 
 app = Flask(__name__)
@@ -41,8 +41,9 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
 class Page(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(100), nullable=False)
-    #content = db.Column(db.Text, nullable=False) # riddles isme jayenge
-    question = db.Column(db.Text, nullable=False)  # agar direct question krna hai toh isme
+    #content = db.Column(db.Text, nullable=False) 
+    question = db.Column(db.Text, nullable=False)# agar direct question krna hai toh isme
+    link = db.Column(db.String(2083))  
     answer = db.Column(db.String(100), nullable=False)
     unlock_code = db.Column(db.String(50), nullable=False, unique=True)
 
@@ -55,21 +56,14 @@ class Team(db.Model):
     current_page = db.relationship("Page", foreign_keys=[current_page_id])
     progress = db.relationship("TeamProgress", backref="team", lazy="dynamic")
 
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
-
-
 class TeamProgress(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     team_id = db.Column(db.Integer, db.ForeignKey("team.id"), nullable=False)
     page_id = db.Column(db.Integer, db.ForeignKey("page.id", ondelete="CASCADE"), nullable=False)
     page = db.relationship("Page")
 
-# with app.app_context():
-#     db.create_all()
+with app.app_context():
+    db.create_all()
 
 @app.route("/")
 def index():
@@ -78,7 +72,7 @@ def index():
 @app.route("/ping")
 def ping():
     try:
-        db.session.execute("SELECT 1")
+        db.session.execute("SELECT * FROM page LIMIT 1")
         return "✅ Connected to Turso!"
     except Exception as e:
         return f"❌ DB Error: {e}"
@@ -107,7 +101,7 @@ def signup():
         team = Team(
             name=team_name,
             current_page_id=first_page.id,
-            password_hash=generate_password_hash(password)  # new
+            password_hash=password  # new
         )
 
         db.session.add(team)
@@ -125,12 +119,15 @@ def login():
     if request.method == "POST":
         team_name = request.form["team_name"].strip()
         password = request.form["password"].strip()
+
         if not team_name or not password:
             flash("Team name and password are required!")
             return redirect(url_for("login"))
 
         team = Team.query.filter_by(name=team_name).first()
-        if not team or not team.check_password(password):
+
+        # Directly compare plain-text password (stored in password_hash field)
+        if not team or team.password_hash != password:
             flash("Invalid team name or password!")
             return redirect(url_for("login"))
 
@@ -195,7 +192,7 @@ def login():
 
 #     return render_template("page.html", page=page, code_unlocked=code_unlocked, unlock_code=unlock_code)
 
-@app.route("/page", methods=["GET", "POST"])
+@app.route("/page", methods=["GET"])
 def page():
     team_name = session.get("team_name")
     if not team_name:
@@ -207,79 +204,100 @@ def page():
         flash("Team not found!")
         return redirect(url_for("signup"))
 
-    # Check if the team has already completed all pages
     if team.current_page_id is None:
-        return render_template("completion.html", team_name=team_name)
+        return redirect(url_for("completion"))
 
-    # Get current page
     page = Page.query.get(team.current_page_id)
-
     if not page:
-        # New team: assign first page
         first_page = Page.query.order_by(Page.id).first()
         if first_page:
             team.current_page_id = first_page.id
             db.session.commit()
             page = first_page
         else:
-            return render_template("completion.html", team_name=team_name)
+            return redirect(url_for("completion"))
 
-    code_unlocked = False
-    unlock_code = None
+    return render_template("page.html", page=page, code_unlocked=False, unlock_code=None)
 
-    if request.method == "POST":
-        answer = request.form.get("answer", "").strip().lower()
 
-        if answer == page.answer.lower():
-            code_unlocked = True
-            unlock_code = page.unlock_code
+@app.route("/check_answer/<int:page_id>", methods=["POST"])
+def check_answer(page_id):
+    team_name = session.get("team_name")
+    if not team_name:
+        return jsonify({"correct": False, "completed": False})
 
-            if not TeamProgress.query.filter_by(team_id=team.id, page_id=page.id).first():
-                db.session.add(TeamProgress(team_id=team.id, page_id=page.id))
-                db.session.commit()
+    team = Team.query.filter_by(name=team_name).first()
+    page = Page.query.get(page_id)
+    if not team or not page:
+        return jsonify({"correct": False, "completed": False})
 
-            # Record the last key
-            team.last_key = unlock_code
-            
-            # Find next page
-            next_page = Page.query.filter(Page.id > page.id).order_by(Page.id).first()
-            
-            if next_page:
-                team.current_page_id = next_page.id
-            else:
-                # No more pages - mark as completed
-                team.current_page_id = None
-            
+    answer = request.form.get("answer", "").strip().lower()
+    correct = (answer == page.answer.lower())
+    completed = False
+
+    if correct:
+        # Only fetch progress once
+        progress_pages = {tp.page_id for tp in TeamProgress.query.filter_by(team_id=team.id).all()}
+        if page.id not in progress_pages:
+            db.session.add(TeamProgress(team_id=team.id, page_id=page.id))
             db.session.commit()
 
-            if next_page:
-                flash("✅ Correct!")
-                return redirect(url_for("page"))
-            else:
-                # All challenges completed!
-                return render_template("completion.html", team_name=team_name)
-        else:
-            flash("❌ Incorrect! Try again.")
+        team.last_key = page.unlock_code
 
-    return render_template("page.html", page=page, code_unlocked=code_unlocked, unlock_code=unlock_code)
+        next_page = Page.query.filter(Page.id > page.id).order_by(Page.id).first()
+        if next_page:
+            team.current_page_id = next_page.id
+        else:
+            team.current_page_id = None
+            completed = True
+
+        db.session.commit()
+
+    return jsonify({"correct": correct, "completed": completed})
+
+
+@app.route("/completion")
+def completion():
+    team_name = session.get("team_name")
+    return render_template("completion.html", team_name=team_name)
 
 @app.route("/leaderboard")
 def leaderboard():
-    teams = Team.query.all()
+    # Query teams with their progress count and last progress ID in one go
+    subquery = (
+        db.session.query(
+            TeamProgress.team_id,
+            func.count(TeamProgress.id).label("pages_unlocked"),
+            func.max(TeamProgress.id).label("last_progress_id")
+        )
+        .group_by(TeamProgress.team_id)
+        .subquery()
+    )
+
+    # Join Team with aggregated progress
+    results = (
+        db.session.query(
+            Team,
+            subquery.c.pages_unlocked,
+            subquery.c.last_progress_id
+        )
+        .outerjoin(subquery, Team.id == subquery.c.team_id)
+        .all()
+    )
 
     leaderboard_data = []
-    for team in teams:
-        pages_unlocked = team.progress.count()
-        last_progress = team.progress.order_by(TeamProgress.id.desc()).first()
-        last_progress_id = last_progress.id if last_progress else 0
+    for team, pages_unlocked, last_progress_id in results:
         leaderboard_data.append({
             "team_name": team.name,
-            "pages_unlocked": pages_unlocked,
-            "last_progress": last_progress_id,
+            "pages_unlocked": pages_unlocked or 0,
+            "last_progress": last_progress_id or 0,
             "current_page": team.current_page.title if team.current_page else "Completed"
         })
 
-    leaderboard_data.sort(key=lambda x: (-x["pages_unlocked"], x["last_progress"]))
+    # Sorting logic (same as before)
+    leaderboard_data.sort(
+        key=lambda x: (-x["pages_unlocked"], x["last_progress"])
+    )
 
     return render_template("leaderboard.html", leaderboard=leaderboard_data)
 
@@ -342,6 +360,7 @@ def add_page():
             title=request.form["title"],
             #content=request.form["content"],
             question=request.form["question"],
+            link=request.form.get("link"),
             answer=request.form["answer"],
             unlock_code=request.form["unlock_code"]
         )
@@ -358,6 +377,7 @@ def edit_page(page_id):
         page.title = request.form["title"]
         #page.content = request.form["content"]
         page.question = request.form["question"]
+        page.link = request.form.get("link")
         page.answer = request.form["answer"]
         page.unlock_code = request.form["unlock_code"]
         db.session.commit()
