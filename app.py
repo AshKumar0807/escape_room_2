@@ -81,7 +81,7 @@ def ping():
 def signup():
     if request.method == "POST":
         team_name = request.form["team_name"].strip()
-        password = request.form["password"].strip()  # new
+        password = request.form["password"].strip()
 
         if not team_name or not password:
             flash("Team name and password cannot be empty!")
