@@ -22,8 +22,9 @@
 
     <div>
         <label class="block mb-1">Question</label>
-        <input type="text" name="question" value="{{ page.question if page else '' }}" required
-            class="w-full p-2 rounded bg-gray-900 text-yellow-300 border border-yellow-600">
+        <textarea name="question" required
+            class="w-full p-2 rounded bg-gray-900 text-yellow-300 border border-yellow-600"
+            rows="4">{{ page.question if page else '' }}</textarea>
     </div>
     <div>
         <label class="block mb-1">Link</label>
