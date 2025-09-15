@@ -1,11 +1,41 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="text-center mt-10">
-    <h2 class="text-3xl font-bold mb-4">Welcome to the Escape Room CTF!</h2>
+    <h2 class="text-3xl font-bold mb-4">Welcome to the Escape Room!</h2>
+    <div class="flex justify-center">
+        <div class="max-w-lg w-full bg-#111 p-6 rounded-2xl shadow-md">
+            <h2 class="text-2xl font-bold mb-4 text-center">Escape Room Rules</h2>
+            <ul class="space-y-3">
+                <li class="flex items-start">
+                    <span class="mr-2">⏳</span>
+                    <span><strong>Time Limit</strong> – You have a set time to uncover the secrets and break
+                        free <strong>before 1 PM sharp</strong>.</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="mr-2">🤝</span>
+                    <span><strong>Teamwork</strong> – Every clue counts. Share, discuss, and solve together.</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="mr-2">🏠</span>
+                    <span><strong>Respect the Environment</strong> – Treat the room gently; the puzzles need brains, not
+                        force.</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="mr-2">🎉</span>
+                    <span><strong>Have Fun</strong> – Stay curious, stay clever, and enjoy the adventure!</span>
+                </li>
+            </ul>
+        </div>
+    </div>
     {% if not session.get('team_name') %}
-    <a href="{{ url_for('signup') }}" class="btn">Sign Up Your Team</a>
+    <div class="flex justify-center mt-6">
+        <a href="{{ url_for('signup') }}"
+            class="text-3xl px-6 py-3 border-2 border-yellow-500 rounded-lg text-yellow-500 font-bold hover:bg-yellow-500 hover:text-white transition">
+            Sign Up Your Team
+        </a>
+    </div>
     {% else %}
-    <a href="{{ url_for('page') }}" class="btn">Continue Challenge</a>
+    <a href="{{ url_for('page') }}" class="btn">Continue Unlocking Rooms</a>
     {% endif %}
 </div>
 {% endblock %}
