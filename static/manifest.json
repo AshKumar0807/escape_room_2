@@ -1,0 +1,20 @@
+{
+    "name": "Tech Escape Room",
+    "short_name": "EscapeRoom",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#176a8f",
+    "theme_color": "#176a8f",
+    "icons": [
+        {
+            "src": "/static/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/static/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

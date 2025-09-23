@@ -3,9 +3,22 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>ISTE x Escape Room</title>
+
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+    <meta name="theme-color" content="#111">
+
+    <!-- iOS PWA support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ISTE x Escape Room">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='icons/icon-192.png') }}">
+
     <style>
         body {
             background-color: #111;
@@ -29,11 +42,11 @@
 
 <body class="min-h-screen flex flex-col">
 
+    <!-- Header -->
     <header class="p-4 flex justify-between items-center border-b border-yellow-600">
         <h1 class="text-2xl font-bold">ISTE x Escape Room</h1>
         <nav>
             <a href="{{ url_for('index') }}" class="mr-6">Home</a>
-
             {% if session.get('team_name') %}
             <a href="{{ url_for('leaderboard') }}" class="mr-4">Leaderboard</a>
             <a href="{{ url_for('logout') }}" class="mr-6">Logout</a>
@@ -48,6 +61,7 @@
         </nav>
     </header>
 
+    <!-- Main content -->
     <main class="flex-1 p-6">
         {% with messages = get_flashed_messages() %}
         {% if messages %}
@@ -61,9 +75,55 @@
         {% block content %}{% endblock %}
     </main>
 
+    <!-- Footer -->
     <footer class="p-4 text-center border-t border-yellow-600">
         ISTE x Escape Room
     </footer>
+
+    <!-- Android Install Button -->
+    <button id="installBtn" class="fixed bottom-4 right-4 bg-yellow-600 text-black px-4 py-2 rounded shadow-lg hidden">
+        Install App
+    </button>
+
+    <!-- iOS Install Banner -->
+    <div id="iosInstallBanner"
+        class="hidden fixed bottom-4 left-1/2 -translate-x-1/2 bg-yellow-600 text-black px-4 py-2 rounded shadow-lg text-center">
+        Tap <strong>Share → Add to Home Screen</strong> to install this app
+    </div>
+
+    <script>
+        // Service Worker registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('{{ url_for('static', filename='serviceWorker.js') }}')
+                .then(reg => console.log("Service Worker registered", reg))
+                .catch(err => console.log("Service Worker registration failed", err));
+        }
+
+        // Android Install Popup
+        let deferredPrompt;
+        const installBtn = document.getElementById('installBtn');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.classList.remove('hidden');
+        });
+
+        installBtn.addEventListener('click', async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            const choiceResult = await deferredPrompt.userChoice;
+            console.log('User choice:', choiceResult.outcome);
+            installBtn.classList.add('hidden');
+            deferredPrompt = null;
+        });
+
+        // iOS Install Banner
+        const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+        const isInStandalone = window.navigator.standalone;
+        if (isIos && !isInStandalone) {
+            document.getElementById('iosInstallBanner').classList.remove('hidden');
+        }
+    </script>
 
 </body>
 
