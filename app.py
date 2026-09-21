@@ -219,41 +219,102 @@ def page():
 
     return render_template("page.html", page=page, code_unlocked=False, unlock_code=None)
 
-
 @app.route("/check_answer/<int:page_id>", methods=["POST"])
 def check_answer(page_id):
     team_name = session.get("team_name")
+
     if not team_name:
         return jsonify({"correct": False, "completed": False})
 
+    # Get team and page
     team = Team.query.filter_by(name=team_name).first()
-    page = Page.query.get(page_id)
+    page = db.session.get(Page, page_id)
+
     if not team or not page:
         return jsonify({"correct": False, "completed": False})
 
+    # Check answer
     answer = request.form.get("answer", "").strip().lower()
-    correct = (answer == page.answer.lower())
-    completed = False
 
-    if correct:
-        # Only fetch progress once
-        progress_pages = {tp.page_id for tp in TeamProgress.query.filter_by(team_id=team.id).all()}
-        if page.id not in progress_pages:
-            db.session.add(TeamProgress(team_id=team.id, page_id=page.id))
-            db.session.commit()
+    if answer != page.answer.lower():
+        return jsonify({
+            "correct": False,
+            "completed": False
+        })
 
-        team.last_key = page.unlock_code
+    # Check if this page is already recorded for this team
+    existing_progress = TeamProgress.query.filter_by(
+        team_id=team.id,
+        page_id=page.id
+    ).first()
 
-        next_page = Page.query.filter(Page.id > page.id).order_by(Page.id).first()
-        if next_page:
-            team.current_page_id = next_page.id
-        else:
-            team.current_page_id = None
-            completed = True
+    if not existing_progress:
+        db.session.add(
+            TeamProgress(
+                team_id=team.id,
+                page_id=page.id
+            )
+        )
 
-        db.session.commit()
+    # Update team progress
+    team.last_key = page.unlock_code
 
-    return jsonify({"correct": correct, "completed": completed})
+    next_page = (
+        Page.query
+        .filter(Page.id > page.id)
+        .order_by(Page.id)
+        .first()
+    )
+
+    if next_page:
+        team.current_page_id = next_page.id
+        completed = False
+    else:
+        team.current_page_id = None
+        completed = True
+
+    # IMPORTANT: only ONE commit
+    db.session.commit()
+
+    return jsonify({
+        "correct": True,
+        "completed": completed
+    })
+
+# @app.route("/check_answer/<int:page_id>", methods=["POST"])
+# def check_answer(page_id):
+#     team_name = session.get("team_name")
+#     if not team_name:
+#         return jsonify({"correct": False, "completed": False})
+
+#     team = Team.query.filter_by(name=team_name).first()
+#     page = Page.query.get(page_id)
+#     if not team or not page:
+#         return jsonify({"correct": False, "completed": False})
+
+#     answer = request.form.get("answer", "").strip().lower()
+#     correct = (answer == page.answer.lower())
+#     completed = False
+
+#     if correct:
+#         # Only fetch progress once
+#         progress_pages = {tp.page_id for tp in TeamProgress.query.filter_by(team_id=team.id).all()}
+#         if page.id not in progress_pages:
+#             db.session.add(TeamProgress(team_id=team.id, page_id=page.id))
+#             db.session.commit()
+
+#         team.last_key = page.unlock_code
+
+#         next_page = Page.query.filter(Page.id > page.id).order_by(Page.id).first()
+#         if next_page:
+#             team.current_page_id = next_page.id
+#         else:
+#             team.current_page_id = None
+#             completed = True
+
+#         db.session.commit()
+
+#     return jsonify({"correct": correct, "completed": completed})
 
 
 @app.route("/completion")
